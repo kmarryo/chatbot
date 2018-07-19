@@ -1,7 +1,31 @@
 <template>
   <div>
     <div v-if="chooseDate">
+      <h3>Please choose your preferred date:</h3>
       <button v-for="(weekDay, i) in weekDays" :key="i" @click="day = weekDay; chooseDate = false">{{ weekDay }}</button>
+    </div>
+    <div v-if="showMap">
+      <h3>Find your way to us:</h3>
+      <no-ssr>
+        <GmapMap :center="commands.map.data"
+                   :zoom="15"
+                   map-type-id="roadmap"
+                   style="width: 650px; height: 400px">
+          <GmapMarker :position="commands.map.data"
+                      :clickable="true"
+                      :draggable="true"
+                      @click="center=commands.map.data" />
+        </GmapMap>
+      </no-ssr>
+    </div>
+    <div v-if="showRate">
+      <h3>Please rate your experience:</h3>
+      <div v-for="(star, s) in commands.rate.data" :key="s" @mouseover="commands.rate.data.slice(0, s).style = 'star_rate'">
+        {{commands.rate.data.slice(0, s + 1)}}
+        <i class="material-icons">
+          {{ star.style }}
+        </i>
+      </div>
     </div>
     <form action="" @submit.prevent="userLogin" v-if="!loggedIn">
       <input type="text" placeholder="Username" v-model="$store.state.user.name">
@@ -33,36 +57,49 @@ export default {
   data: () => ({
     submitted: false,
     chooseDate: false,
+    showMap: false,
+    showRate: false,
+    starStyle: 'star_border',
     weekDays: [],
     day: '',
     bot: {
       author: 'ottonova bot',
       message: ''
     },
-    commands: [
-      {
+    commands: {
+      date: {
         author: 'ottonova bot',
         type: 'date',
-        data: '2018-01-01T14:32:33.921Z'
+        data: '2018-01-01T14:32:33.921Z',
+        done: false
       },
-      {
+      map: {
         author: 'ottonova bot',
         type: 'map',
         data: {
           lat: 48.1482933,
           lng: 11.586628
-        }
+        },
+        done: false
       },
-      {
+      rate: {
         author: 'ottonova bot',
         type: 'rate',
-        data: [1, 2, 3, 4, 5]
+        data: [
+          { stars: '1', style: 'star_border' },
+          { stars: '2', style: 'star_border' },
+          { stars: '3', style: 'star_border' },
+          { stars: '4', style: 'star_border' },
+          { stars: '5', style: 'star_border' }
+        ],
+        done: false
       },
-      {
+      complete: {
         type: 'complete',
-        data: ['Yes', 'No']
+        data: ['Yes', 'No'],
+        done: false
       }
-    ]
+    }
   }),
   computed: {
     loggedIn() {
@@ -102,8 +139,8 @@ export default {
       if (message.text.includes('/')) {
         // Create array of command types (names)
         let commandTypes = []
-        for (command of this.commands) {
-          commandTypes.push(command.type)
+        for (command in this.commands) {
+          commandTypes.push(this.commands[command].type)
         }
         // Get the text after the /
         let command = message.text
@@ -126,7 +163,9 @@ export default {
       }", right?`
     },
     runCommand(command) {
-      if (command === 'date') this.getDate()
+      if (command === 'date' && !this.commands.date.done) this.getDate()
+      if (command === 'map' && !this.commands.map.done) this.getMap()
+      if (command === 'rate' && !this.commands.rate.done) this.getRate()
     },
     scrollToBottom() {
       if (this.loggedIn) {
@@ -151,10 +190,20 @@ export default {
         this.weekDays.push(days[dayIndex])
         dayIndex++
       }
-      this.chooseDate = true
+      console.log(this.chooseDate)
+      if (!this.chooseDate) this.chooseDate = true
+      // Prevents that the widget can be called again
+      this.commands.date.done = true
     },
     getMap() {
       console.log('get map')
+      this.showMap = true
+      this.commands.map.done = true
+    },
+    getRate() {
+      console.log('get rate')
+      this.showRate = true
+      this.commands.rate.done = true
     }
   },
   head: {
