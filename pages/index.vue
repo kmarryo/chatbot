@@ -1,5 +1,6 @@
 <template>
   <div>
+    <!-- Pseudo login screen (without validation) -->
     <form action="" @submit.prevent="userLogin" v-if="!loggedIn">
       <input type="text" placeholder="Username" v-model="$store.state.user.name">
       <input type="password" placeholder="Password" v-model="$store.state.user.pw">
@@ -10,14 +11,21 @@
         <div class="chatArea">
           <ul class="messages" ref="messages">
             <li class="message" v-for="(message, index) in messages" :key="index">
-              {{ $store.state.user.name + ': ' }}{{ message.text }} 
-              <br> 
-              {{ bot.author + ': ' }}
-              {{ getBotMessage(message) }}
-              <div v-if="showDate && message.text === '/date'">
-                <button v-for="(weekDay, i) in weekDays" :key="i" @click="day = weekDay; showDate = false">{{ weekDay }}</button>
+              <!-- User Messages -->
+              {{ message.author + ': ' }}{{ message.text }}
+              <br>
+              <!-- Responses from the ottonova bot -->
+                {{ `${message.response.author}: ${message.response.text}` }}
+                <!-- Result shown by ottonova bot as soon as user makes his decision -->
+              <div v-if="message.result.text">
+                {{ message.result.author + ': ' }} {{ message.result.text }}
               </div>
-              <div v-if="showMap && message.text === '/map'">
+              <!-- DATE Widget -->
+              <div v-if="showDate && commands.date.done === false">
+                <button v-for="(weekDay, i) in weekDays" :key="i" @click="day = weekDay; commands.date.done = true; showResult(message, day)">{{ weekDay }}</button>
+              </div>
+              <!-- MAP Widget -->
+              <div v-if="showMap">
                 <no-ssr>
                   <GmapMap :center="commands.map.data"
                             :zoom="15"
@@ -30,15 +38,17 @@
                   </GmapMap>
                 </no-ssr>
               </div>
-              <div v-if="showRate && commands.rate.done === false && message.text === '/rate'">
-                <div v-for="(star, s) in commands.rate.data" :key="s" @mouseover="star.hover = true; calcStar(star, s)" @mouseout="star.hover = false; calcStar(star, s)" @click="commands.rate.done = true; commands.rate.starRated = star">
+              <!-- RATE Widget -->
+              <div v-if="showRate && commands.rate.done === false">
+                <div v-for="(star, s) in commands.rate.data" :key="s" @mouseover="star.hover = true; calcStar(star, s)" @mouseout="star.hover = false; calcStar(star, s)" @click="commands.rate.done = true; showResult(message, `${star.stars} Stars`)">
                   <i class="material-icons">
                     {{ star.style }}
                   </i>
                 </div>
               </div>
-              <div v-if="showComplete && message.text === 'complete'">
-                <button v-for="option in commands.complete.data" :key="option">{{ option }}</button>
+              <!-- COMPLETE Widget -->
+              <div v-if="showComplete">
+                <button v-for="option in commands.complete.data" :key="option" @click="runComplete(option)">{{ option }}</button>
               </div>
             </li>
           </ul>
@@ -55,17 +65,13 @@ import socket from '~/plugins/socket.io.js'
 export default {
   data: () => ({
     submitted: false,
+    logout: false,
     showDate: false,
     showMap: false,
     showRate: false,
     showComplete: false,
-    starStyle: 'star_border',
     weekDays: [],
     day: '',
-    bot: {
-      author: 'ottonova bot',
-      message: ''
-    },
     commands: {
       date: {
         author: 'ottonova bot',
@@ -77,7 +83,7 @@ export default {
       map: {
         author: 'ottonova bot',
         type: 'map',
-        message: 'Here you can find us:',
+        message: 'Find us here:',
         data: {
           lat: 48.1482933,
           lng: 11.586628
@@ -111,7 +117,8 @@ export default {
       return (
         this.$store.state.user.name &&
         this.$store.state.user.pw &&
-        this.submitted
+        this.submitted &&
+        !this.logout
       )
     }
   },
@@ -137,20 +144,35 @@ export default {
   methods: {
     sendMessage() {
       if (!this.message.trim()) return
+      // Message obj. that gets sended to socket on emit
       let message = {
-        text: this.message.trim()
+        text: this.message.trim(),
+        author: this.$store.state.user.name,
+        type: '',
+        response: {
+          text: '',
+          author: 'ottonova bot'
+        },
+        result: {
+          text: '',
+          author: 'ottonova bot'
+        }
       }
+      // generate response from ottonova bot
+      message.response.text = this.getBotMessage(message)
 
+      // emit socket send-message event
       socket.emit('send-message', message)
       this.messages.push(message)
-      this.bot.message = message
       this.message = ''
     },
     getBotMessage(message) {
       // Commands are indicated by putting an "/" in front of the word
+      // Check if message text has an /
       if (message.text.includes('/')) {
         message.type = 'command'
         // Create array of command types (names)
+        // to check if this command after the slash really exists
         let commandTypes = []
         for (command in this.commands) {
           commandTypes.push(this.commands[command].type)
@@ -163,20 +185,34 @@ export default {
 
         // Check if the command exists
         if (commandTypes.indexOf(command) > -1) {
-          this.runCommand(command)
-          return this.commands[command].message
+          // message from bot when widget has been run before
+          if (this.commands[command].done) {
+            return 'Sorry, you can only run this widget once.'
+          } else {
+            // execute command and send message from bot
+            this.runCommand(command)
+            return this.commands[command].message
+          }
         }
       } else {
+        // Message is no command so it´s just repeated from the bot
         return `Hey ${this.$store.state.user.name}, you said "${
           message.text
         }", right?`
       }
     },
+    showResult(message, result) {
+      // Sends a message from the bot with the chosen result
+      message.result.text = `Your choice: ${result}`
+    },
     runCommand(command) {
       if (this.commands[command].done) return
       else {
         if (command === 'date') this.getDate()
-        if (command === 'map') this.getMap()
+        if (command === 'map')  {
+          this.showMap = true
+          this.commands.map.done = true
+          }
         if (command === 'rate') this.showRate = true
         if (command === 'complete') this.showComplete = true
       }
@@ -189,11 +225,14 @@ export default {
       }
     },
     userLogin() {
+      // save user data in local storage and log him in
       this.$store.commit('saveData')
       this.submitted = true
+      this.logout = false
     },
     getDate() {
       const date = new Date()
+      // Array with only week days
       const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
       let dayIndex = date.getDay() - 1
       // Current day
@@ -205,15 +244,10 @@ export default {
         dayIndex++
       }
       if (!this.showDate) this.showDate = true
-      // Prevents that the widget can be called again
-      this.commands.date.done = true
-    },
-    getMap() {
-      console.log('get map')
-      this.showMap = true
-      this.commands.map.done = true
     },
     calcStar(star, s) {
+      // s = index of Array
+      // Slice Array depending on how many stars the user is hovering
       const starArr = this.commands.rate.data.slice(0, s + 1)
       for (let item in starArr) {
         if (star.hover) {
@@ -221,6 +255,15 @@ export default {
         } else {
           starArr[item].style = 'star_border'
         }
+      }
+    },
+    runComplete(option) {
+      // If user clicks yes, he should be logged out and comes back to the login screen
+      if (option === 'Yes') {
+        this.logout = true
+      } else {
+        this.showComplete = false
+        this.commands.complete.done = true
       }
     }
   },
