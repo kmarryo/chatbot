@@ -19,8 +19,10 @@ module.exports = {
   },
   plugins: [
     { src: '~/plugins/localStorage.js', ssr: false },
-    { src: '~/plugins/google-maps.js', ssr: false }
+    { src: '~/plugins/google-maps.js', ssr: false },
+    '~/plugins/vuetify.js'
   ],
+  css: ['~/assets/style/app.styl', '~/assets/style/main.styl'],
   /*
   ** Customize the progress bar color
   */
@@ -53,7 +55,7 @@ module.exports = {
         })
       }
     },
-    vendors: ['babel-polyfill']
+    vendor: ['babel-polyfill', '~/plugins/vuetify.js']
   },
   modules: ['~/io'],
   env: {

@@ -1,11 +1,22 @@
 <template>
   <div>
     <!-- Pseudo login screen (without validation) -->
-    <form action="" @submit.prevent="userLogin" v-if="!loggedIn">
-      <input type="text" placeholder="Username" v-model="$store.state.user.name">
-      <input type="password" placeholder="Password" v-model="$store.state.user.pw">
-      <button type="submit">Login</button>
-    </form>
+    <v-container v-if="!loggedIn">
+      <v-layout row wrap align-center>
+        <v-flex xs12>
+    <v-form @submit.prevent="userLogin">
+    <v-text-field
+      v-model="$store.state.user.name"
+    ></v-text-field>
+    <v-text-field
+      v-model="$store.state.user.pw"
+    ></v-text-field>
+    <v-btn type="submit">Login</v-btn>
+  </v-form>
+        </v-flex>
+      </v-layout>
+    </v-container>
+
     <ul class="pages" v-else>
       <li class="chat page">
         <div class="chatArea">
@@ -17,15 +28,20 @@
               <!-- Responses from the ottonova bot -->
                 {{ `${message.response.author}: ${message.response.text}` }}
                 <!-- Result shown by ottonova bot as soon as user makes his decision -->
+              <transition name="fade" mode="out-in">
               <div v-if="message.result.text">
                 {{ message.result.author + ': ' }} {{ message.result.text }}
               </div>
+              </transition>
               <!-- DATE Widget -->
-              <div v-if="showDate && commands.date.done === false">
+              <transition name="fade" mode="out-in">
+              <div v-if="showDate && !commands.date.done && message.command === commands.date.type">
                 <button v-for="(weekDay, i) in weekDays" :key="i" @click="day = weekDay; commands.date.done = true; showResult(message, day)">{{ weekDay }}</button>
               </div>
+              </transition>
               <!-- MAP Widget -->
-              <div v-if="showMap">
+              <transition name="fade" mode="out-in">
+              <div v-if="showMap && message.command === commands.map.type">
                 <no-ssr>
                   <GmapMap :center="commands.map.data"
                             :zoom="15"
@@ -38,18 +54,23 @@
                   </GmapMap>
                 </no-ssr>
               </div>
+              </transition>
               <!-- RATE Widget -->
-              <div v-if="showRate && commands.rate.done === false">
-                <div v-for="(star, s) in commands.rate.data" :key="s" @mouseover="star.hover = true; calcStar(star, s)" @mouseout="star.hover = false; calcStar(star, s)" @click="commands.rate.done = true; showResult(message, `${star.stars} Stars`)">
-                  <i class="material-icons">
+              <transition name="fade" mode="out-in">
+              <div v-if="showRate && commands.rate.done === false && message.command === commands.rate.type" class="star-container">
+                <div v-for="(star, s) in commands.rate.data" :key="s" @mouseover="star.hover = true; calcStar(star, s)" @mouseout="star.hover = false; calcStar(star, s)" @click="commands.rate.done = true; showResult(message, `${star.stars} Stars`)" class="star">
+                  <i class="material-icons star-icon" :class="{'star-hover': star.style === 'star_rate'}">
                     {{ star.style }}
                   </i>
                 </div>
               </div>
+              </transition>
               <!-- COMPLETE Widget -->
-              <div v-if="showComplete">
+              <transition name="fade" mode="out-in">
+              <div v-if="showComplete && message.command === commands.complete.type">
                 <button v-for="option in commands.complete.data" :key="option" @click="runComplete(option)">{{ option }}</button>
               </div>
+              </transition>
             </li>
           </ul>
         </div>
@@ -78,7 +99,8 @@ export default {
         type: 'date',
         message: 'When do you want to meet us?',
         data: '2018-01-01T14:32:33.921Z',
-        done: false
+        done: false,
+        isRunning: false
       },
       map: {
         author: 'ottonova bot',
@@ -88,7 +110,8 @@ export default {
           lat: 48.1482933,
           lng: 11.586628
         },
-        done: false
+        done: false,
+        isRunning: false
       },
       rate: {
         author: 'ottonova bot',
@@ -102,13 +125,15 @@ export default {
           { stars: '4', style: 'star_border', hover: false },
           { stars: '5', style: 'star_border', hover: false }
         ],
-        done: false
+        done: false,
+        isRunning: false
       },
       complete: {
         type: 'complete',
         message: 'Do you really want to quit?',
         data: ['Yes', 'No'],
-        done: false
+        done: false,
+        isRunning: false
       }
     }
   }),
@@ -134,6 +159,7 @@ export default {
     messages: 'scrollToBottom'
   },
   beforeMount() {
+    this.messages = []
     socket.on('new-message', message => {
       this.messages.push(message)
     })
@@ -149,6 +175,7 @@ export default {
         text: this.message.trim(),
         author: this.$store.state.user.name,
         type: '',
+        command: '',
         response: {
           text: '',
           author: 'ottonova bot'
@@ -183,6 +210,8 @@ export default {
           .splice(-1)[0]
           .split(' ')[0]
 
+        message.command = command
+
         // Check if the command exists
         if (commandTypes.indexOf(command) > -1) {
           // message from bot when widget has been run before
@@ -190,8 +219,13 @@ export default {
             return 'Sorry, you can only run this widget once.'
           } else {
             // execute command and send message from bot
-            this.runCommand(command)
-            return this.commands[command].message
+            if (!this.commands[command].isRunning) {
+              this.runCommand(command)
+              this.commands[command].isRunning = true
+              return this.commands[command].message
+            } else {
+              return 'Sorry, you only can run this widget one at a time.'
+            }
           }
         }
       } else {
@@ -209,10 +243,10 @@ export default {
       if (this.commands[command].done) return
       else {
         if (command === 'date') this.getDate()
-        if (command === 'map')  {
+        if (command === 'map') {
           this.showMap = true
           this.commands.map.done = true
-          }
+        }
         if (command === 'rate') this.showRate = true
         if (command === 'complete') this.showComplete = true
       }
@@ -273,7 +307,7 @@ export default {
 }
 </script>
 
-<style>
+<style lang="scss">
 * {
   box-sizing: border-box;
 }
@@ -359,5 +393,33 @@ ul {
   position: absolute;
   right: 0;
   width: 100%;
+}
+
+.star-container {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+}
+
+.star {
+  display: flex;
+  width: 30px;
+  .star-icon {
+    font-size: 2rem;
+  }
+  &.star-hover {
+    color: #ffdd00;
+    cursor: pointer;
+  }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease-out;
+}
+
+.fade-enter,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
