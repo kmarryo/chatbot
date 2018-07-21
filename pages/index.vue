@@ -1,32 +1,5 @@
 <template>
   <div>
-    <div v-if="chooseDate">
-      <h3>Please choose your preferred date:</h3>
-      <button v-for="(weekDay, i) in weekDays" :key="i" @click="day = weekDay; chooseDate = false">{{ weekDay }}</button>
-    </div>
-    <div v-if="showMap">
-      <h3>Find your way to us:</h3>
-      <no-ssr>
-        <GmapMap :center="commands.map.data"
-                   :zoom="15"
-                   map-type-id="roadmap"
-                   style="width: 650px; height: 400px">
-          <GmapMarker :position="commands.map.data"
-                      :clickable="true"
-                      :draggable="true"
-                      @click="center=commands.map.data" />
-        </GmapMap>
-      </no-ssr>
-    </div>
-    <div v-if="showRate">
-      <h3>Please rate your experience:</h3>
-      <div v-for="(star, s) in commands.rate.data" :key="s" @mouseover="commands.rate.data.slice(0, s).style = 'star_rate'">
-        {{commands.rate.data.slice(0, s + 1)}}
-        <i class="material-icons">
-          {{ star.style }}
-        </i>
-      </div>
-    </div>
     <form action="" @submit.prevent="userLogin" v-if="!loggedIn">
       <input type="text" placeholder="Username" v-model="$store.state.user.name">
       <input type="password" placeholder="Password" v-model="$store.state.user.pw">
@@ -41,6 +14,32 @@
               <br> 
               {{ bot.author + ': ' }}
               {{ getBotMessage(message) }}
+              <div v-if="showDate && message.text === '/date'">
+                <button v-for="(weekDay, i) in weekDays" :key="i" @click="day = weekDay; showDate = false">{{ weekDay }}</button>
+              </div>
+              <div v-if="showMap && message.text === '/map'">
+                <no-ssr>
+                  <GmapMap :center="commands.map.data"
+                            :zoom="15"
+                            map-type-id="roadmap"
+                            style="width: 650px; height: 400px">
+                    <GmapMarker :position="commands.map.data"
+                                :clickable="true"
+                                :draggable="true"
+                                @click="center=commands.map.data" />
+                  </GmapMap>
+                </no-ssr>
+              </div>
+              <div v-if="showRate && commands.rate.done === false && message.text === '/rate'">
+                <div v-for="(star, s) in commands.rate.data" :key="s" @mouseover="star.hover = true; calcStar(star, s)" @mouseout="star.hover = false; calcStar(star, s)" @click="commands.rate.done = true; commands.rate.starRated = star">
+                  <i class="material-icons">
+                    {{ star.style }}
+                  </i>
+                </div>
+              </div>
+              <div v-if="showComplete && message.text === 'complete'">
+                <button v-for="option in commands.complete.data" :key="option">{{ option }}</button>
+              </div>
             </li>
           </ul>
         </div>
@@ -56,9 +55,10 @@ import socket from '~/plugins/socket.io.js'
 export default {
   data: () => ({
     submitted: false,
-    chooseDate: false,
+    showDate: false,
     showMap: false,
     showRate: false,
+    showComplete: false,
     starStyle: 'star_border',
     weekDays: [],
     day: '',
@@ -70,12 +70,14 @@ export default {
       date: {
         author: 'ottonova bot',
         type: 'date',
+        message: 'When do you want to meet us?',
         data: '2018-01-01T14:32:33.921Z',
         done: false
       },
       map: {
         author: 'ottonova bot',
         type: 'map',
+        message: 'Here you can find us:',
         data: {
           lat: 48.1482933,
           lng: 11.586628
@@ -85,17 +87,20 @@ export default {
       rate: {
         author: 'ottonova bot',
         type: 'rate',
+        starRated: {},
+        message: 'Please rate your experience:',
         data: [
-          { stars: '1', style: 'star_border' },
-          { stars: '2', style: 'star_border' },
-          { stars: '3', style: 'star_border' },
-          { stars: '4', style: 'star_border' },
-          { stars: '5', style: 'star_border' }
+          { stars: '1', style: 'star_border', hover: false },
+          { stars: '2', style: 'star_border', hover: false },
+          { stars: '3', style: 'star_border', hover: false },
+          { stars: '4', style: 'star_border', hover: false },
+          { stars: '5', style: 'star_border', hover: false }
         ],
         done: false
       },
       complete: {
         type: 'complete',
+        message: 'Do you really want to quit?',
         data: ['Yes', 'No'],
         done: false
       }
@@ -135,8 +140,16 @@ export default {
       let message = {
         text: this.message.trim()
       }
+
+      socket.emit('send-message', message)
+      this.messages.push(message)
+      this.bot.message = message
+      this.message = ''
+    },
+    getBotMessage(message) {
       // Commands are indicated by putting an "/" in front of the word
       if (message.text.includes('/')) {
+        message.type = 'command'
         // Create array of command types (names)
         let commandTypes = []
         for (command in this.commands) {
@@ -151,21 +164,22 @@ export default {
         // Check if the command exists
         if (commandTypes.indexOf(command) > -1) {
           this.runCommand(command)
+          return this.commands[command].message
         }
+      } else {
+        return `Hey ${this.$store.state.user.name}, you said "${
+          message.text
+        }", right?`
       }
-      socket.emit('send-message', message)
-      this.messages.push(message)
-      this.message = ''
-    },
-    getBotMessage(msg) {
-      return `Hey ${this.$store.state.user.name}, you said "${
-        msg.text
-      }", right?`
     },
     runCommand(command) {
-      if (command === 'date' && !this.commands.date.done) this.getDate()
-      if (command === 'map' && !this.commands.map.done) this.getMap()
-      if (command === 'rate' && !this.commands.rate.done) this.getRate()
+      if (this.commands[command].done) return
+      else {
+        if (command === 'date') this.getDate()
+        if (command === 'map') this.getMap()
+        if (command === 'rate') this.showRate = true
+        if (command === 'complete') this.showComplete = true
+      }
     },
     scrollToBottom() {
       if (this.loggedIn) {
@@ -190,8 +204,7 @@ export default {
         this.weekDays.push(days[dayIndex])
         dayIndex++
       }
-      console.log(this.chooseDate)
-      if (!this.chooseDate) this.chooseDate = true
+      if (!this.showDate) this.showDate = true
       // Prevents that the widget can be called again
       this.commands.date.done = true
     },
@@ -200,10 +213,15 @@ export default {
       this.showMap = true
       this.commands.map.done = true
     },
-    getRate() {
-      console.log('get rate')
-      this.showRate = true
-      this.commands.rate.done = true
+    calcStar(star, s) {
+      const starArr = this.commands.rate.data.slice(0, s + 1)
+      for (let item in starArr) {
+        if (star.hover) {
+          starArr[item].style = 'star_rate'
+        } else {
+          starArr[item].style = 'star_border'
+        }
+      }
     }
   },
   head: {

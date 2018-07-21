@@ -23,5 +23,9 @@ module.exports = function() {
       messages.push(message)
       socket.broadcast.emit('new-message', message)
     })
+    socket.on('send-command', function(command) {
+      messages.push(command)
+      socket.broadcast.emit('new-message', command)
+    })
   })
 }
