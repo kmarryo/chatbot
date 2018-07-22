@@ -1,9 +1,10 @@
 <template>
   <div>
     <!-- Pseudo login screen (without validation) -->
-    <v-container v-if="!loggedIn">
-      <v-layout row wrap align-center>
+    <v-container v-if="!loggedIn" class="form-container">
+      <v-layout row wrap>
         <v-flex xs12>
+          <h1 class="mb-4 text-xs-center">Login</h1>
     <v-form @submit.prevent="userLogin">
     <v-text-field
       v-model="$store.state.user.name"
@@ -11,9 +12,14 @@
     ></v-text-field>
     <v-text-field
       v-model="$store.state.user.pw"
+      :append-icon="showPw ? 'visibility_off' : 'visibility'"
+      :type="showPw ? 'text' : 'password'"
+      @click:append="showPw = !showPw"
       label="Password"
     ></v-text-field>
-    <v-btn type="submit">Login</v-btn>
+    <div class="text-xs-center">
+      <v-btn color="white black--text" type="submit">Login</v-btn>
+    </div>
   </v-form>
         </v-flex>
       </v-layout>
@@ -93,6 +99,7 @@ export default {
     showMap: false,
     showRate: false,
     showComplete: false,
+    showPw: false,
     weekDays: [],
     day: '',
     commands: {
@@ -265,6 +272,7 @@ export default {
       this.$store.commit('saveData')
       this.submitted = true
       this.logout = false
+      document.getElementsByTagName('body')[0].classList.remove('login-screen')
     },
     getDate() {
       const date = new Date()
@@ -297,6 +305,7 @@ export default {
       // If user clicks yes, he should be logged out and comes back to the login screen
       if (option === 'Yes') {
         this.logout = true
+        document.getElementsByTagName('body')[0].classList.add('login-screen')
       } else {
         this.showComplete = false
         this.commands.complete.done = true
@@ -304,7 +313,10 @@ export default {
     }
   },
   head: {
-    title: 'ottonova socket.io chat'
+    title: 'ottonova socket.io chat',
+    bodyAttrs: {
+      class: 'login-screen'
+    }
   }
 }
 </script>
@@ -330,6 +342,16 @@ body {
   height: 100%;
   margin: 0;
   padding: 0;
+}
+
+.login-screen {
+  background-image: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.3),
+      rgba(0, 0, 0, 0.3)
+    ),
+    url('~/assets/img/munich-ottonova.jpg');
+  background-size: cover;
 }
 
 ul {
@@ -423,5 +445,35 @@ ul {
 .fade-enter,
 .fade-leave-to {
   opacity: 0;
+}
+
+.form-container {
+  /* Permalink - use to edit and share this gradient: http://colorzilla.com/gradient-editor/#1dbadc+0,223254+100 */
+  background: #1dbadc; /* Old browsers */
+  background: -moz-linear-gradient(
+    top,
+    #1dbadc 0%,
+    #223254 100%
+  ); /* FF3.6-15 */
+  background: -webkit-linear-gradient(
+    top,
+    #1dbadc 0%,
+    #223254 100%
+  ); /* Chrome10-25,Safari5.1-6 */
+  background: linear-gradient(
+    to bottom,
+    #1dbadc 0%,
+    #223254 100%
+  ); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#1dbadc', endColorstr='#223254',GradientType=0 ); /* IE6-9 */
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  padding: 2rem;
+  width: 400px;
+  max-width: 100%;
 }
 </style>
