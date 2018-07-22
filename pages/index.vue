@@ -44,7 +44,7 @@
               <!-- DATE Widget -->
               <transition name="fade" mode="out-in">
               <div v-if="showDate && !commands.date.done && message.command === commands.date.type">
-                <button v-for="(weekDay, i) in weekDays" :key="i" @click="day = weekDay; commands.date.done = true; showResult(message, day)">{{ weekDay }}</button>
+                <v-btn v-for="(weekDay, i) in weekDays" :key="i" @click="day = weekDay; commands.date.done = true; showResult(message, day)">{{ weekDay }}</v-btn>
               </div>
               </transition>
               <!-- MAP Widget -->
@@ -76,7 +76,7 @@
               <!-- COMPLETE Widget -->
               <transition name="fade" mode="out-in">
               <div v-if="showComplete && message.command === commands.complete.type">
-                <button v-for="option in commands.complete.data" :key="option" @click="runComplete(option)">{{ option }}</button>
+                <v-btn v-for="option in commands.complete.data" :key="option" @click="runComplete(option)">{{ option }}</v-btn>
               </div>
               </transition>
             </li>
@@ -278,9 +278,10 @@ export default {
       const date = new Date()
       // Array with only week days
       const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-      let dayIndex = date.getDay() - 1
+      let dayIndex = date.getDay() > 0 ? date.getDay() - 1 : date.getDay()
       // Current day
       const day = days[dayIndex]
+      console.log(dayIndex, 'dayIndex')
       // Get week days by starting array from 0 after looping it to the end
       for (let i = 0; i < days.length; i++) {
         if (dayIndex >= days.length) dayIndex = 0
@@ -408,7 +409,7 @@ ul {
 /* Input */
 
 .inputMessage {
-  border: 10px solid #3b8070;
+  border: 10px solid #1dbadc;
   bottom: 0;
   height: 60px;
   left: 0;
@@ -431,7 +432,7 @@ ul {
   .star-icon {
     font-size: 2rem;
   }
-  &.star-hover {
+  .star-hover {
     color: #ffdd00;
     cursor: pointer;
   }
