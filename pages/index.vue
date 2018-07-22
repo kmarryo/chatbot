@@ -7,9 +7,11 @@
     <v-form @submit.prevent="userLogin">
     <v-text-field
       v-model="$store.state.user.name"
+      label="Name"
     ></v-text-field>
     <v-text-field
       v-model="$store.state.user.pw"
+      label="Password"
     ></v-text-field>
     <v-btn type="submit">Login</v-btn>
   </v-form>

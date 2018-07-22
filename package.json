@@ -1,15 +1,13 @@
 {
   "name": "ottonova",
   "version": "1.0.0",
-  "description": "Chatbot",
-  "author": "kmarryo <mario.s.lemke@gmail.com>",
   "private": true,
   "scripts": {
-    "dev": "nodemon -w server.js -w nuxt.config.js server.js",
     "build": "nuxt build",
+    "lint": "eslint --ext .js,.vue --ignore-path .gitignore .",
+    "dev": "nodemon -w server.js -w nuxt.config.js server.js",
     "start": "NODE_ENV=production node server.js",
     "generate": "nuxt generate",
-    "lint": "eslint --ext .js,.vue --ignore-path .gitignore .",
     "precommit": "npm run lint"
   },
   "dependencies": {
@@ -17,10 +15,13 @@
     "nuxt": "^1.0.0",
     "socket.io": "^2.1.1",
     "socket.io-client": "^2.1.1",
+    "stylus": "^0.54.5",
+    "stylus-loader": "^3.0.2",
     "vue2-google-maps": "^0.10.0",
     "vuetify": "^1.1.7"
   },
   "devDependencies": {
+    "@babel/polyfill": "^7.0.0-beta.49",
     "babel-eslint": "^8.2.1",
     "eslint": "^4.15.0",
     "eslint-friendly-formatter": "^3.0.0",
@@ -29,6 +30,9 @@
     "node-sass": "^4.9.2",
     "nodemon": "^1.18.2",
     "sass-loader": "^7.0.3",
+    "vue-cli-plugin-vuetify": "^0.1.6",
     "vuex-persistedstate": "^2.5.4"
-  }
+  },
+  "description": "Chatbot",
+  "author": "kmarryo <mario.s.lemke@gmail.com>"
 }
