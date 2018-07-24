@@ -31,12 +31,4 @@ io.on('connection', socket => {
     messages.push(message)
     socket.broadcast.emit('new-message', message)
   })
-  socket.on('run-command', function(command) {
-    if (command === 'date') {
-      const date = new Date()
-      socket.emit('send-message', date)
-    } else {
-      socket.emit('send-message', 'test')
-    }
-  })
 })
