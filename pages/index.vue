@@ -33,9 +33,9 @@
               <!-- User Messages -->
               {{ message.author + ': ' }}{{ message.text }}
               <br>
-              <!-- Responses from the ottonova bot -->
+              <!-- Responses from the bot -->
                 {{ `${message.response.author}: ${message.response.text}` }}
-                <!-- Result shown by ottonova bot as soon as user makes his decision -->
+                <!-- Result shown by bot as soon as user makes his decision -->
               <transition name="fade" mode="out-in">
               <div v-if="message.result.text">
                 {{ message.result.author + ': ' }} {{ message.result.text }}
@@ -104,7 +104,7 @@ export default {
     day: '',
     commands: {
       date: {
-        author: 'ottonova bot',
+        author: 'Bot',
         type: 'date',
         message: 'When do you want to meet us?',
         data: '2018-01-01T14:32:33.921Z',
@@ -112,7 +112,7 @@ export default {
         isRunning: false
       },
       map: {
-        author: 'ottonova bot',
+        author: 'Bot',
         type: 'map',
         message: 'Find us here:',
         data: {
@@ -123,7 +123,7 @@ export default {
         isRunning: false
       },
       rate: {
-        author: 'ottonova bot',
+        author: 'Bot',
         type: 'rate',
         starRated: {},
         message: 'Please rate your experience:',
@@ -187,14 +187,14 @@ export default {
         command: '',
         response: {
           text: '',
-          author: 'ottonova bot'
+          author: 'Bot'
         },
         result: {
           text: '',
-          author: 'ottonova bot'
+          author: 'Bot'
         }
       }
-      // generate response from ottonova bot
+      // generate response from Bot
       message.response.text = this.getBotMessage(message)
 
       // emit socket send-message event
@@ -314,7 +314,7 @@ export default {
     }
   },
   head: {
-    title: 'ottonova socket.io chat',
+    title: 'socket.io chat',
     bodyAttrs: {
       class: 'login-screen'
     }
@@ -351,7 +351,7 @@ body {
       rgba(0, 0, 0, 0.3),
       rgba(0, 0, 0, 0.3)
     ),
-    url('~/assets/img/munich-ottonova.jpg');
+    url('~/assets/img/munich.jpg');
   background-size: cover;
 }
 

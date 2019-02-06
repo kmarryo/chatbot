@@ -1,5 +1,5 @@
 {
-  "name": "ottonova",
+  "name": "chatbot",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -11,25 +11,25 @@
     "precommit": "npm run lint"
   },
   "dependencies": {
-    "express": "^4.15.2",
-    "nuxt": "^1.0.0",
-    "socket.io": "^2.1.1",
-    "socket.io-client": "^2.1.1",
+    "express": "^4.16.4",
+    "nuxt": "^1.4.5",
+    "socket.io": "^2.2.0",
+    "socket.io-client": "^2.2.0",
     "stylus": "^0.54.5",
     "stylus-loader": "^3.0.2",
-    "vue2-google-maps": "^0.10.0",
-    "vuetify": "^1.1.7"
+    "vue2-google-maps": "^0.10.5",
+    "vuetify": "^1.5.0"
   },
   "devDependencies": {
-    "@babel/polyfill": "^7.0.0-beta.49",
+    "@babel/polyfill": "^7.2.5",
     "babel-eslint": "^8.2.1",
     "eslint": "^4.15.0",
     "eslint-friendly-formatter": "^3.0.0",
     "eslint-loader": "^1.7.1",
-    "eslint-plugin-vue": "^4.0.0",
-    "node-sass": "^4.9.2",
-    "nodemon": "^1.18.2",
-    "sass-loader": "^7.0.3",
+    "eslint-plugin-vue": "^4.7.1",
+    "node-sass": "^4.11.0",
+    "nodemon": "^1.18.9",
+    "sass-loader": "^7.1.0",
     "vue-cli-plugin-vuetify": "^0.1.6",
     "vuex-persistedstate": "^2.5.4"
   },
